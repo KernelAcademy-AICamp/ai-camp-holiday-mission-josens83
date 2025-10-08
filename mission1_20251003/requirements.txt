@@ -1,0 +1,7 @@
+openai
+gradio
+beautifulsoup4
+requests
+konlpy
+matplotlib
+wordcloud
