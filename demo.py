@@ -6,9 +6,15 @@ from dateutil import parser
 
 import gradio as gr
 from openai import OpenAI
+from env_config import initialize_app
 
 
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+# 환경 변수 로드 및 API 키 확인 (앱 시작 시 가장 먼저 실행)
+api_key = initialize_app()
+if not api_key:
+    raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일을 확인하세요.")
+
+OPENAI_API_KEY = api_key
 MAPPING = {
     '인사동': './res/reviews.json',
     '판교': './res/ninetree_pangyo.json',
