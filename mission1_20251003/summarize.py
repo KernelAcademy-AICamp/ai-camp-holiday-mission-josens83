@@ -1,91 +1,95 @@
-import os
 import json
-from dotenv import load_dotenv
-from openai import OpenAI
+import os
 
-# ------------------------------------------------------------
-# 1️⃣ 환경 변수 불러오기 (.env에서 OPENAI_API_KEY 로드)
-# ------------------------------------------------------------
-# ⚠️ .env 파일 예시:
-# OPENAI_API_KEY=sk-xxxxx...
-# ------------------------------------------------------------
+def load_filtered_reviews(file_path="filtered_reviews.json"):
+    """
+    Load filtered reviews from JSON file
+    
+    Args:
+        file_path (str): Path to the filtered reviews JSON file
+        
+    Returns:
+        list: List of review dictionaries
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            reviews = json.load(f)
+        print(f"Loaded {len(reviews)} reviews from {file_path}")
+        return reviews
+    except FileNotFoundError:
+        print(f"Error: {file_path} not found")
+        return []
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON format in {file_path}")
+        return []
 
-load_dotenv()  # 현재 폴더 또는 상위 폴더의 .env 파일 자동 로드
+def summarize_reviews(reviews):
+    """
+    Summarize review content
+    
+    Args:
+        reviews (list): List of review dictionaries
+        
+    Returns:
+        str: Summarized content
+    """
+    # TODO: Implement review summarization logic
+    # This could use various approaches:
+    # - Simple text extraction and concatenation
+    # - AI/ML-based summarization
+    # - Keyword extraction and analysis
+    
+    if not reviews:
+        return "No reviews to summarize"
+    
+    # Placeholder implementation
+    summary = f"Summary of {len(reviews)} reviews:\n\n"
+    
+    for i, review in enumerate(reviews[:5]):  # Show first 5 reviews as example
+        summary += f"Review {i+1}:\n"
+        summary += f"Content: {review.get('content', 'N/A')[:100]}...\n\n"
+    
+    if len(reviews) > 5:
+        summary += f"... and {len(reviews) - 5} more reviews\n"
+    
+    return summary
 
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("❌ 환경 변수 OPENAI_API_KEY가 없습니다. .env 파일을 확인하세요!")
+def save_summary(summary, output_path="summary.txt"):
+    """
+    Save summary to text file
+    
+    Args:
+        summary (str): Summary content to save
+        output_path (str): Output file path
+    """
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(summary)
+        print(f"Summary saved to {output_path}")
+    except Exception as e:
+        print(f"Error saving summary: {e}")
 
-# OpenAI 클라이언트 생성
-client = OpenAI(api_key=api_key)
+def main():
+    """
+    Main function to orchestrate the summarization process
+    """
+    print("Starting review summarization process...")
+    
+    # Load filtered reviews
+    reviews = load_filtered_reviews()
+    
+    if not reviews:
+        print("No reviews found. Exiting.")
+        return
+    
+    # Summarize reviews
+    print("Summarizing reviews...")
+    summary = summarize_reviews(reviews)
+    
+    # Save summary
+    save_summary(summary)
+    
+    print("Summarization process completed!")
 
-# ------------------------------------------------------------
-# 2️⃣ 입력/출력 파일 경로 설정
-# ------------------------------------------------------------
-INPUT_FILE = "filtered_reviews.json"
-OUTPUT_FILE = "summary.txt"
-
-# ------------------------------------------------------------
-# 3️⃣ 리뷰 데이터 로드
-# ------------------------------------------------------------
-try:
-    with open(INPUT_FILE, "r", encoding="utf-8") as f:
-        reviews = json.load(f)
-except FileNotFoundError:
-    raise FileNotFoundError(f"❌ '{INPUT_FILE}' 파일이 존재하지 않습니다.")
-except json.JSONDecodeError:
-    raise ValueError(f"❌ '{INPUT_FILE}' 파일의 JSON 형식이 잘못되었습니다.")
-
-# ------------------------------------------------------------
-# 4️⃣ 리뷰 텍스트 합치기
-# ------------------------------------------------------------
-texts = []
-for r in reviews:
-    if isinstance(r, dict):
-        text = r.get("text") or r.get("review")
-        if text:
-            texts.append(text.strip())
-
-if not texts:
-    raise ValueError("❌ 리뷰 텍스트가 비어 있습니다. JSON 데이터 구조를 확인하세요.")
-
-all_text = "\n".join(texts[:100])  # 너무 많으면 모델 입력 초과 방지 (100개까지만 사용)
-
-# ------------------------------------------------------------
-# 5️⃣ 프롬프트 구성
-# ------------------------------------------------------------
-prompt = f"""
-다음은 한 호텔에 대한 실제 고객 리뷰 모음이야.
-이 리뷰들을 3문장 이내로 핵심만 요약해줘.
-특히 청결, 위치, 서비스, 불편사항에 초점을 맞춰줘.
-
-리뷰들:
-{all_text}
-"""
-
-# ------------------------------------------------------------
-# 6️⃣ OpenAI 모델 호출
-# ------------------------------------------------------------
-try:
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",  # 빠르고 저렴한 모델
-        messages=[
-            {"role": "system", "content": "너는 호텔 리뷰를 요약하는 전문가야."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.4  # 안정적인 요약을 위해 낮은 값
-    )
-    summary = response.choices[0].message.content.strip()
-
-except Exception as e:
-    raise RuntimeError(f"❌ OpenAI API 호출 중 오류 발생: {e}")
-
-# ------------------------------------------------------------
-# 7️⃣ 요약 결과 저장
-# ------------------------------------------------------------
-try:
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(summary)
-    print("✅ 요약문 생성 완료! summary.txt 파일을 확인하세요.")
-except Exception as e:
-    raise RuntimeError(f"❌ 요약 파일 저장 중 오류 발생: {e}")
+if __name__ == "__main__":
+    main()
